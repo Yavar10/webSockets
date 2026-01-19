@@ -171,6 +171,22 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
+//reconnect handlers
+
+socket.on("resync-room", (roomCode) => {
+  if (!roomState[roomCode]) return;
+
+  socket.join(roomCode);
+
+  socket.emit("room-info", {
+    roomCode,
+    count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
+  });
+
+  socket.emit("counter-update", {
+    value: roomState[roomCode].counter
+  });
+});
 
   /* -------- Helpers -------- */
 

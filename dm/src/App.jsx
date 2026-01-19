@@ -24,6 +24,13 @@ const [counter, setCounter] = useState(0);
 
 
   useEffect(() => {
+
+    socket.on("connect", () => {
+    if (joinedRoom) {
+     socket.emit("resync-room", joinedRoom);
+      }
+    });
+
     socket.on("room-created", (code) => {
       setJoinedRoom(code);
       setError("");
@@ -222,7 +229,7 @@ const [counter, setCounter] = useState(0);
     >
       −
     </button>
-    <button
+    {/* <button
       onClick={() => {
         setCounter((c) => c - 1);
         socket.emit("decrement-counter", joinedRoom)
@@ -231,7 +238,7 @@ const [counter, setCounter] = useState(0);
                  hover:bg-red-600 active:scale-95 transition"
     >
       − ui thing
-    </button>
+    </button> */}
 
     <button
       onClick={() => socket.emit("increment-counter", joinedRoom)}
@@ -240,7 +247,7 @@ const [counter, setCounter] = useState(0);
     >
       +
     </button>
-    <button
+   {/*  <button
       onClick={() => {
         setCounter((c) => c + 1);
         socket.emit("increment-counter", joinedRoom)
@@ -249,7 +256,7 @@ const [counter, setCounter] = useState(0);
                  hover:bg-green-600 active:scale-95 transition"
     >
       + ui thing
-    </button>
+    </button> */}
   </div>
 
   <p className="text-sm text-gray-500 italic">
