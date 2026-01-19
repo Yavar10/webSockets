@@ -222,6 +222,16 @@ const [counter, setCounter] = useState(0);
     >
       −
     </button>
+    <button
+      onClick={() => {
+        setCounter((c) => c - 1);
+        socket.emit("decrement-counter", joinedRoom)
+      }}
+      className="px-5 py-2 rounded-lg bg-red-500 text-white text-xl font-bold
+                 hover:bg-red-600 active:scale-95 transition"
+    >
+      − ui thing
+    </button>
 
     <button
       onClick={() => socket.emit("increment-counter", joinedRoom)}
@@ -229,6 +239,16 @@ const [counter, setCounter] = useState(0);
                  hover:bg-green-600 active:scale-95 transition"
     >
       +
+    </button>
+    <button
+      onClick={() => {
+        setCounter((c) => c + 1);
+        socket.emit("increment-counter", joinedRoom)
+      }}
+      className="px-5 py-2 rounded-lg bg-green-500 text-white text-xl font-bold
+                 hover:bg-green-600 active:scale-95 transition"
+    >
+      + ui thing
     </button>
   </div>
 
