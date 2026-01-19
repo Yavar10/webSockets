@@ -6,44 +6,57 @@ import { Server } from "socket.io";
 const httpServer = createServer();
 
 const io = new Server(httpServer, {
-  cors: { origin: "*" } // OK for now; we’ll tighten later
+  cors: { origin: "*" } // 🔒 OK for now, restrict later
 });
 
-/* 🔑 REQUIRED FOR DEPLOYMENT (Render, etc.) */
 const PORT = process.env.PORT || 3001;
 
 /* ================= STATE ================= */
 
-const rooms = new Set();
+/*
+  roomState is the SINGLE source of truth.
+  If a room exists, it must exist here.
+*/
 const roomState = {};
+
+/*
+  rooms Set is optional bookkeeping,
+  but all critical checks should use roomState
+*/
+const rooms = new Set();
 
 /* ================= SOCKET LOGIC ================= */
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  /* -------- Typing indicators (ephemeral) -------- */
+  /* -------- Typing indicators (ephemeral state) -------- */
 
   socket.on("typing", (roomCode) => {
+    if (!roomCode) return;
     socket.to(roomCode).emit("user-typing", {
       username: socket.username
     });
   });
 
   socket.on("stop-typing", (roomCode) => {
+    if (!roomCode) return;
     socket.to(roomCode).emit("user-stop-typing");
   });
 
   /* -------- Room creation -------- */
 
   socket.on("create-room", (roomCode) => {
+    if (!roomCode) return;
+
     socket.join(roomCode);
     rooms.add(roomCode);
 
+    // ✅ authoritative room state initialization
     roomState[roomCode] = {
       ready: new Set(),
       locked: false,
-      counter: 0 // ✅ authoritative shared state
+      counter: 0
     };
 
     emitRoomInfo(roomCode);
@@ -82,12 +95,12 @@ io.on("connection", (socket) => {
   /* -------- Join room -------- */
 
   socket.on("join-room", (roomCode) => {
-    if (!rooms.has(roomCode)) {
+    if (!roomState[roomCode]) {
       socket.emit("error", "Room does not exist");
       return;
     }
 
-    if (roomState[roomCode]?.locked) {
+    if (roomState[roomCode].locked) {
       socket.emit("error", "Room is locked");
       return;
     }
@@ -102,7 +115,7 @@ io.on("connection", (socket) => {
 
     socket.join(roomCode);
 
-    // sync counter on join
+    // ✅ send authoritative state immediately
     socket.emit("counter-update", {
       value: roomState[roomCode].counter
     });
@@ -129,7 +142,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("player-unready", (roomCode) => {
-    roomState[roomCode]?.ready.delete(socket.id);
+    if (!roomState[roomCode]) return;
+
+    roomState[roomCode].ready.delete(socket.id);
 
     io.to(roomCode).emit("ready-update", {
       count: roomState[roomCode].ready.size
@@ -148,6 +163,26 @@ io.on("connection", (socket) => {
     });
   });
 
+  /* -------- Reconnect / Resync -------- */
+
+  socket.on("resync-room", (roomCode) => {
+    if (!roomState[roomCode]) return;
+
+    // ✅ avoid redundant joins
+    if (!socket.rooms.has(roomCode)) {
+      socket.join(roomCode);
+    }
+
+    socket.emit("room-info", {
+      roomCode,
+      count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
+    });
+
+    socket.emit("counter-update", {
+      value: roomState[roomCode].counter
+    });
+  });
+
   /* -------- Disconnect handling -------- */
 
   socket.on("disconnecting", () => {
@@ -156,11 +191,15 @@ io.on("connection", (socket) => {
     for (const roomCode of socket.rooms) {
       if (roomCode === socket.id) continue;
 
+      const state = roomState[roomCode];
       const room = io.sockets.adapter.rooms.get(roomCode);
 
+      // ✅ remove from ready set to avoid stale locks
+      state?.ready.delete(socket.id);
+
       if (!room || room.size === 1) {
-        rooms.delete(roomCode);
         delete roomState[roomCode];
+        rooms.delete(roomCode);
         console.log(`Room deleted: ${roomCode}`);
       } else {
         emitRoomInfo(roomCode);
@@ -171,22 +210,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
-//reconnect handlers
-
-socket.on("resync-room", (roomCode) => {
-  if (!roomState[roomCode]) return;
-
-  socket.join(roomCode);
-
-  socket.emit("room-info", {
-    roomCode,
-    count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
-  });
-
-  socket.emit("counter-update", {
-    value: roomState[roomCode].counter
-  });
-});
 
   /* -------- Helpers -------- */
 

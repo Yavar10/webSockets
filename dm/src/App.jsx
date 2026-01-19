@@ -22,24 +22,43 @@ const [counter, setCounter] = useState(0);
 /*   const [readyCount, setReadyCount] = useState(0);
   const [locked, setLocked] = useState(false); */
 
+useEffect(() => {
+  const savedUsername = localStorage.getItem("username");
+  const savedRoom = localStorage.getItem("roomCode");
+
+  if (savedUsername) {
+    setUsername(savedUsername);
+    setUsernameSet(true);
+    socket.emit("set-username", savedUsername);
+  }
+
+  if (savedRoom) {
+    setJoinedRoom(savedRoom);
+  }
+}, []);
+
+
 
   useEffect(() => {
 
     socket.on("connect", () => {
-    if (joinedRoom) {
-     socket.emit("resync-room", joinedRoom);
-      }
-    });
+  const savedRoom = localStorage.getItem("roomCode");
+  if (savedRoom) {
+    socket.emit("resync-room", savedRoom);
+  }
+});
+
 
     socket.on("room-created", (code) => {
+      localStorage.setItem("roomCode", code);   //roomcode persists local save
       setJoinedRoom(code);
-      setError("");
     });
 
     socket.on("room-joined", (code) => {
-      setJoinedRoom(code);
-      setError("");
+  localStorage.setItem("roomCode", code);        //same as above
+  setJoinedRoom(code);
     });
+
 
     socket.on("counter-update", ({ value }) => {
   setCounter(value);
@@ -74,17 +93,18 @@ const [counter, setCounter] = useState(0);
       setError(msg);
     });
 
-    return () => {
-      socket.off("room-created");
-      socket.off("room-joined");
-      socket.off("room-info");
-      socket.off("room-message");
-      socket.off("user-typing");
-      socket.off("user-stop-typing");
-      socket.off("error");
-      socket.off("counter-update");
+   return () => {
+  socket.off("connect");
+  socket.off("room-created");
+  socket.off("room-joined");
+  socket.off("room-info");
+  socket.off("room-message");
+  socket.off("user-typing");
+  socket.off("user-stop-typing");
+  socket.off("error");
+  socket.off("counter-update");
+};
 
-    };
   }, []);
 
   const createRoom = () => {
@@ -134,6 +154,7 @@ const [counter, setCounter] = useState(0);
             onClick={() => {
               if (!username.trim()) return;
               socket.emit("set-username", username);
+              localStorage.setItem("username", username);
               setUsernameSet(true);
             }}
             className="w-full bg-stone-800 text-white py-3 rounded-sm font-light hover:bg-stone-900 transition-colors"
