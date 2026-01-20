@@ -32,7 +32,7 @@ const UsernameSet = () => {
             setAuth(input);
             navigate("/lobby");
           }}
-          className="w-full bg-stone-800 text-white py-3 rounded-sm font-light hover:bg-stone-900 transition-colors"
+          className="w-full bg-stone-800 text-white py-3 rounded-sm font-light hover:bg-stone-900 transition-colors mb-3"
         >
           Continue
         </button>
