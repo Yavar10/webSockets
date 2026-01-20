@@ -165,23 +165,28 @@ io.on("connection", (socket) => {
 
   /* -------- Reconnect / Resync -------- */
 
-  socket.on("resync-room", (roomCode) => {
-    if (!roomState[roomCode]) return;
+ socket.on("resync-room", (roomCode) => {
+  if (!roomState[roomCode]) {
+    socket.emit("resync-failed");
+    return;
+  }
 
-    // ✅ avoid redundant joins
-    if (!socket.rooms.has(roomCode)) {
-      socket.join(roomCode);
-    }
+  if (!socket.rooms.has(roomCode)) {
+    socket.join(roomCode);
+  }
 
-    socket.emit("room-info", {
-      roomCode,
-      count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
-    });
-
-    socket.emit("counter-update", {
-      value: roomState[roomCode].counter
-    });
+  socket.emit("room-info", {
+    roomCode,
+    count: io.sockets.adapter.rooms.get(roomCode)?.size || 0
   });
+
+  socket.emit("counter-update", {
+    value: roomState[roomCode].counter
+  });
+
+  socket.emit("resync-success", roomCode);
+});
+
 
   /* -------- Disconnect handling -------- */
 
