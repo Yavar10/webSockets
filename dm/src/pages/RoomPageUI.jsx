@@ -29,11 +29,20 @@ const RoomPageUI = ({
           </div>
 
           <div className="mt-6 flex flex-col items-center gap-4">
-            <h2 className="text-xl font-semibold tracking-wide">
+            <button
+                onClick={()=>{
+                  localStorage.removeItem("roomCode")
+                  window.location.reload()
+                }}
+                className="px-5 py-2 rounded-lg bg-black text-white text-xl font-bold hover:bg-red-600 active:scale-95 transition"
+              >
+                Exit Room
+              </button>
+            <h2 className="text-xl font-semibold text-white tracking-wide">
               Shared Counter
             </h2>
 
-            <div className="text-4xl font-mono font-bold">
+            <div className="text-4xl font-mono text-white font-bold">
               {counter}
             </div>
 
