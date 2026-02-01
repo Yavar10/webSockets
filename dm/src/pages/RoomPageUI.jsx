@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 const RoomPageUI = ({
   roomCode,
   roomInfo,
@@ -10,6 +12,7 @@ const RoomPageUI = ({
   onIncrement,
   onDecrement
 }) => {
+  const navigate =useNavigate();
   return (
     <div className="min-h-screen bg-stone-50 p-6">
       <div className="max-w-3xl mx-auto bg-white rounded-sm shadow-lg border border-stone-200 overflow-hidden">
@@ -32,7 +35,8 @@ const RoomPageUI = ({
             <button
                 onClick={()=>{
                   localStorage.removeItem("roomCode")
-                  window.location.reload()
+                  navigate("/")
+                  /* window.location.reload() */
                 }}
                 className="px-5 py-2 rounded-lg bg-black text-white text-xl font-bold hover:bg-red-600 active:scale-95 transition"
               >
